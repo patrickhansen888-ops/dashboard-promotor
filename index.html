@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Promotor & Absensi</title>
+    <!-- Tailwind CSS untuk tampilan modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 font-sans">
+
+    <div class="max-w-md mx-auto min-h-screen bg-white shadow-lg flex flex-col">
+        <!-- Header -->
+        <header class="bg-blue-600 text-white p-4 text-center">
+            <h1 class="text-xl font-bold">Dashboard Promotor</h1>
+            <p class="text-xs text-blue-100 mt-1">Absensi, Stok, & Laporan Penjualan</p>
+        </header>
+
+        <!-- Navigasi Menu Tab -->
+        <div class="flex border-b bg-slate-100 text-sm font-medium text-center">
+            <button onclick="switchTab('absen')" id="tab-absen" class="flex-1 py-3 text-blue-600 border-b-2 border-blue-600 bg-white">Absensi</button>
+            <button onclick="switchTab('penjualan')" id="tab-penjualan" class="flex-1 py-3 text-slate-500">Penjualan</button>
+            <button onclick="switchTab('stok')" id="tab-stok" class="flex-1 py-3 text-slate-500">Stok Toko</button>
+        </div>
+
+        <!-- Konten Utama -->
+        <div class="p-4 flex-1">
+            
+            <!-- TAB 1: ABSENSI -->
+            <div id="content-absen" class="space-y-4">
+                <h2 class="text-lg font-semibold text-slate-800">Absensi Harian & Grooming</h2>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Nama Promotor</label>
+                    <input type="text" id="namaPromotor" class="mt-1 w-full p-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Masukkan nama Anda">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Pilih Toko / Customer</label>
+                    <select id="selectToko" class="mt-1 w-full p-2 border rounded-lg bg-white">
+                        <option value="">Memuat data toko...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Lokasi GPS (Geotagging)</label>
+                    <button type="button" onclick="getLokasi()" class="mt-1 w-full bg-slate-100 border text-slate-700 py-2 rounded-lg text-sm font-medium hover:bg-slate-200">
+                        📍 Ambil Titik Koordinat GPS
+                    </button>
+                    <p id="infoLokasi" class="text-xs text-slate-500 mt-1">Belum diambil</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Foto Grooming (Full-Body / Vertikal)</label>
+                    <p class="text-xs text-slate-400 mb-1">Wajib foto dari ujung kepala sampai kaki (posisi berdiri/vertikal).</p>
+                    <input type="file" id="fotoGrooming" accept="image/*" capture="environment" class="mt-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+
+                <button onclick="kirimAbsen()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    Kirim Absensi Masuk
+                </button>
+            </div>
+
+            <!-- TAB 2: PENJUALAN -->
+            <div id="content-penjualan" class="hidden space-y-4">
+                <h2 class="text-lg font-semibold text-slate-800">Pencatatan Penjualan (Sellout)</h2>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Pilih Produk (SKU)</label>
+                    <select id="selectProduk" onchange="updateHargaArea()" class="mt-1 w-full p-2 border rounded-lg bg-white">
+                        <option value="">Memuat produk...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Jumlah Terjual (Qty)</label>
+                    <input type="number" id="qtyJual" value="1" min="1" class="mt-1 w-full p-2 border rounded-lg">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Estimasi Harga Satuan</label>
+                    <input type="text" id="hargaSatuan" readonly class="mt-1 w-full p-2 border rounded-lg bg-slate-100 text-slate-600" placeholder="Otomatis terisi">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700">Foto Struk / Nota (Opsional/OCR)</label>
+                    <input type="file" accept="image/*" capture="environment" class="mt-1 w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700">
+                </div>
+
+                <button onclick="simpanPenjualan()" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition">
+                    Simpan Laporan Penjualan
+                </button>
+            </div>
+
+            <!-- TAB 3: STOK TOKO -->
+            <div id="content-stok" class="hidden space-y-4">
+                <h2 class="text-lg font-semibold text-slate-800">Update Stok Fisik Toko</h2>
+                <p class="text-xs text-slate-500">Masukkan sisa stok produk yang ada di display toko Anda saat ini.</p>
+                
+                <div id="listStokContainer" class="space-y-3">
+                    <!-- Render dinamis dari master produk -->
+                </div>
+
+                <button onclick="simpanStok()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
+                    Perbarui Stok Toko
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // URL Web App dari Google Apps Script Anda (Ganti setelah dipublish)
+        const API_URL = "https://script.google.com/macros/s/AKfycbxUaZzh1KSLoDBEUM_WgVW5SRFJAT_5CcNiP2w7hMTajCojp9O8ntT_feZxltebCavwTQ/exec";
+
+        let globalProducts = [];
+        let globalStores = [];
+        let currentLat = null;
+        let currentLon = null;
+
+        // Navigasi Tab
+        function switchTab(tab) {
+            ['absen', 'penjualan', 'stok'].forEach(t => {
+                document.getElementById(`content-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "flex-1 py-3 text-slate-500 border-b-2 border-transparent";
+            });
+            document.getElementById(`content-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = "flex-1 py-3 text-blue-600 border-b-2 border-blue-600 bg-white font-medium";
+        }
+
+        // Ambil Koordinat GPS
+        function getLokasi() {
+            const info = document.getElementById('infoLokasi');
+            if (navigator.geolocation) {
+                info.innerText = "Mencari lokasi GPS...";
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentLat = position.coords.latitude;
+                        currentLon = position.coords.longitude;
+                        info.innerText = `Koordinat: ${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`;
+                        info.className = "text-xs text-emerald-600 mt-1 font-semibold";
+                    },
+                    (error) => {
+                        info.innerText = "Gagal mendapatkan GPS. Pastikan izin lokasi aktif.";
+                        info.className = "text-xs text-red-500 mt-1";
+                    }
+                );
+            } else {
+                info.innerText = "Browser tidak mendukung Geolocation.";
+            }
+        }
+
+        // Validasi Foto Full-Body (Tinggi > Lebar)
+        document.getElementById('fotoGrooming').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const img = new Image();
+                img.src = URL.createObjectURL(file);
+                img.onload = function() {
+                    if (img.height <= img.width) {
+                        alert("Peringatan: Foto terdeteksi berorientasi lanskap/lebar. Mohon unggah foto berdiri tegak dari kepala sampai kaki (vertikal) untuk screening grooming!");
+                        e.target.value = ""; // Reset input
+                    }
+                }
+            }
+        });
+
+        // Simulasi Ambil Master Data dari Google Sheets saat halaman dibuka
+        function loadMasterData() {
+            // Contoh data tiruan sesuai struktur sheets Anda (Customer & Products)
+            globalStores = [
+                { kode: "CUST01", nama: "Toko Makmur Jaya", cabang: "Jakarta Selatan" },
+                { kode: "CUST02", nama: "Electronic City PIM", cabang: "Jakarta Selatan" }
+            ];
+
+            globalProducts = [
+                { sku: "SW-RCED10", jenis: "Rice Cooker", hargaA: 707000, hargaB: 710000, hargaC: 717000 },
+                { sku: "SW-AF01", jenis: "Air Fryer", hargaA: 650000, hargaB: 675000, hargaC: 700000 }
+            ];
+
+            // Render Select Toko
+            let tokoHtml = '<option value="">-- Pilih Toko Tempat Bertugas --</option>';
+            globalStores.forEach(s => {
+                tokoHtml += `<option value="${s.nama}">${s.nama} (${s.cabang})</option>`;
+            });
+            document.getElementById('selectToko').innerHTML = tokoHtml;
+
+            // Render Select Produk
+            let prodHtml = '<option value="">-- Pilih Produk SKU --</option>';
+            globalProducts.forEach(p => {
+                prodHtml += `<option value="${p.sku}">${p.sku} - ${p.jenis}</option>`;
+            });
+            document.getElementById('selectProduk').innerHTML = prodHtml;
+
+            // Render Input Stok Toko
+            let stokHtml = '';
+            globalProducts.forEach(p => {
+                stokHtml += `
+                    <div class="flex items-center justify-between border p-2 rounded-lg bg-slate-50">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-800">${p.sku}</p>
+                            <p class="text-xs text-slate-500">${p.jenis}</p>
+                        </div>
+                        <input type="number" value="0" min="0" class="w-20 p-1 border rounded text-center input-stok" data-sku="${p.sku}">
+                    </div>`;
+            });
+            document.getElementById('listStokContainer').innerHTML = stokHtml;
+        }
+
+        function updateHargaArea() {
+            const selectedSku = document.getElementById('selectProduk').value;
+            const prod = globalProducts.find(p => p.sku === selectedSku);
+            if (prod) {
+                // Contoh mengambil Harga Area A
+                document.getElementById('hargaSatuan').value = "Rp " + prod.hargaA.toLocaleString('id-ID');
+            } else {
+                document.getElementById('hargaSatuan').value = "";
+            }
+        }
+
+        function kirimAbsen() {
+            const nama = document.getElementById('namaPromotor').value;
+            const toko = document.getElementById('selectToko').value;
+            const foto = document.getElementById('fotoGrooming').files.length;
+
+            if (!nama || !toko) {
+                alert("Mohon lengkapi Nama dan Pilih Toko!");
+                return;
+            }
+            if (!currentLat) {
+                alert("Mohon ambil titik koordinat GPS terlebih dahulu!");
+                return;
+            }
+            if (foto === 0) {
+                alert("Foto grooming full-body wajib diunggah!");
+                return;
+            }
+
+            alert("Absensi berhasil direkam dan dikirim ke sistem!");
+        }
+
+        function simpanPenjualan() {
+            alert("Laporan penjualan berhasil disimpan!");
+        }
+
+        function simpanStok() {
+            alert("Data stok fisik toko berhasil diperbarui!");
+        }
+
+        // Jalankan saat load awal
+        window.onload = loadMasterData;
+    </script>
+</body>
+</html>
