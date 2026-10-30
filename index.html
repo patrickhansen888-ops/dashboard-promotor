@@ -98,7 +98,7 @@
                 <p class="text-xs text-slate-500">Masukkan sisa stok produk yang ada di display toko Anda saat ini.</p>
                 
                 <div id="listStokContainer" class="space-y-3">
-                    <!-- Render dinamis dari master produk -->
+                    <!-- Render dinamis dari master produk sheets -->
                 </div>
 
                 <button onclick="simpanStok()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition">
@@ -110,8 +110,8 @@
     </div>
 
     <script>
-        // URL Web App dari Google Apps Script Anda (Ganti setelah dipublish)
-        const API_URL = "https://script.google.com/macros/s/AKfycbxUaZzh1KSLoDBEUM_WgVW5SRFJAT_5CcNiP2w7hMTajCojp9O8ntT_feZxltebCavwTQ/exec";
+        // Masukkan URL Web App Google Apps Script Anda di sini
+        const API_URL = "URL_WEB_APP_GOOGLE_SCRIPT_ANDA";
 
         let globalProducts = [];
         let globalStores = [];
@@ -159,60 +159,74 @@
                 img.onload = function() {
                     if (img.height <= img.width) {
                         alert("Peringatan: Foto terdeteksi berorientasi lanskap/lebar. Mohon unggah foto berdiri tegak dari kepala sampai kaki (vertikal) untuk screening grooming!");
-                        e.target.value = ""; // Reset input
+                        e.target.value = ""; 
                     }
                 }
             }
         });
 
-        // Simulasi Ambil Master Data dari Google Sheets saat halaman dibuka
+        // Ambil Master Data murni dari Google Sheets
         function loadMasterData() {
-            // Contoh data tiruan sesuai struktur sheets Anda (Customer & Products)
-            globalStores = [
-                { kode: "CUST01", nama: "Toko Makmur Jaya", cabang: "Jakarta Selatan" },
-                { kode: "CUST02", nama: "Electronic City PIM", cabang: "Jakarta Selatan" }
-            ];
+            if (!API_URL || API_URL.includes("URL_WEB_APP")) {
+                console.warn("URL API Google Sheets belum diatur.");
+                return;
+            }
 
-            globalProducts = [
-                { sku: "SW-RCED10", jenis: "Rice Cooker", hargaA: 707000, hargaB: 710000, hargaC: 717000 },
-                { sku: "SW-AF01", jenis: "Air Fryer", hargaA: 650000, hargaB: 675000, hargaC: 700000 }
-            ];
+            fetch(API_URL + "?action=getData")
+                .then(res => res.json())
+                .then(data => {
+                    globalStores = data.customer || [];
+                    globalProducts = data.products || [];
 
-            // Render Select Toko
-            let tokoHtml = '<option value="">-- Pilih Toko Tempat Bertugas --</option>';
-            globalStores.forEach(s => {
-                tokoHtml += `<option value="${s.nama}">${s.nama} (${s.cabang})</option>`;
-            });
-            document.getElementById('selectToko').innerHTML = tokoHtml;
+                    // Render Select Toko dari sheet Customer
+                    let tokoHtml = '<option value="">-- Pilih Toko Tempat Bertugas --</option>';
+                    globalStores.forEach(s => {
+                        let namaToko = s["Nama Toko"] || s.nama || "";
+                        let cabang = s["Cabang"] || s.cabang || "";
+                        if (namaToko) {
+                            tokoHtml += `<option value="${namaToko}">${namaToko} (${cabang})</option>`;
+                        }
+                    });
+                    document.getElementById('selectToko').innerHTML = tokoHtml;
 
-            // Render Select Produk
-            let prodHtml = '<option value="">-- Pilih Produk SKU --</option>';
-            globalProducts.forEach(p => {
-                prodHtml += `<option value="${p.sku}">${p.sku} - ${p.jenis}</option>`;
-            });
-            document.getElementById('selectProduk').innerHTML = prodHtml;
+                    // Render Select Produk dari sheet Products
+                    let prodHtml = '<option value="">-- Pilih Produk SKU --</option>';
+                    globalProducts.forEach(p => {
+                        let sku = p["SKU Produk"] || p.sku || "";
+                        let jenis = p["Jenis Produk"] || p.jenis || "";
+                        if (sku) {
+                            prodHtml += `<option value="${sku}">${sku} - ${jenis}</option>`;
+                        }
+                    });
+                    document.getElementById('selectProduk').innerHTML = prodHtml;
 
-            // Render Input Stok Toko
-            let stokHtml = '';
-            globalProducts.forEach(p => {
-                stokHtml += `
-                    <div class="flex items-center justify-between border p-2 rounded-lg bg-slate-50">
-                        <div>
-                            <p class="text-sm font-semibold text-slate-800">${p.sku}</p>
-                            <p class="text-xs text-slate-500">${p.jenis}</p>
-                        </div>
-                        <input type="number" value="0" min="0" class="w-20 p-1 border rounded text-center input-stok" data-sku="${p.sku}">
-                    </div>`;
-            });
-            document.getElementById('listStokContainer').innerHTML = stokHtml;
+                    // Render Input Stok Toko
+                    let stokHtml = '';
+                    globalProducts.forEach(p => {
+                        let sku = p["SKU Produk"] || p.sku || "";
+                        let jenis = p["Jenis Produk"] || p.jenis || "";
+                        if (sku) {
+                            stokHtml += `
+                                <div class="flex items-center justify-between border p-2 rounded-lg bg-slate-50">
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-800">${sku}</p>
+                                        <p class="text-xs text-slate-500">${jenis}</p>
+                                    </div>
+                                    <input type="number" value="0" min="0" class="w-20 p-1 border rounded text-center input-stok" data-sku="${sku}">
+                                </div>`;
+                        }
+                    });
+                    document.getElementById('listStokContainer').innerHTML = stokHtml;
+                })
+                .catch(err => console.error("Gagal memuat master data:", err));
         }
 
         function updateHargaArea() {
             const selectedSku = document.getElementById('selectProduk').value;
-            const prod = globalProducts.find(p => p.sku === selectedSku);
+            const prod = globalProducts.find(p => (p["SKU Produk"] === selectedSku || p.sku === selectedSku));
             if (prod) {
-                // Contoh mengambil Harga Area A
-                document.getElementById('hargaSatuan').value = "Rp " + prod.hargaA.toLocaleString('id-ID');
+                let hargaA = prod["Harga A"] || prod.hargaA || 0;
+                document.getElementById('hargaSatuan').value = "Rp " + Number(hargaA).toLocaleString('id-ID');
             } else {
                 document.getElementById('hargaSatuan').value = "";
             }
@@ -236,7 +250,7 @@
                 return;
             }
 
-            alert("Absensi berhasil direkam dan dikirim ke sistem!");
+            alert("Absensi berhasil direkam!");
         }
 
         function simpanPenjualan() {
