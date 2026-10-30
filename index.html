@@ -110,8 +110,8 @@
     </div>
 
     <script>
-        // Masukkan URL Web App Google Apps Script Anda di sini
-        const API_URL = "URL_WEB_APP_GOOGLE_SCRIPT_ANDA";
+        // URL Web App Google Apps Script Anda yang sudah disatukan
+        const API_URL = "https://script.google.com/macros/s/AKfycbxUaZzh1KSLoDBEUM_WgVW5SRFJAT_5CcNiP2w7hMTajCojp9O8ntT_feZxltebCavwTQ/exec";
 
         let globalProducts = [];
         let globalStores = [];
@@ -167,11 +167,6 @@
 
         // Ambil Master Data murni dari Google Sheets
         function loadMasterData() {
-            if (!API_URL || API_URL.includes("URL_WEB_APP")) {
-                console.warn("URL API Google Sheets belum diatur.");
-                return;
-            }
-
             fetch(API_URL + "?action=getData")
                 .then(res => res.json())
                 .then(data => {
@@ -250,11 +245,55 @@
                 return;
             }
 
-            alert("Absensi berhasil direkam!");
+            // Kirim ke Google Sheets via POST
+            const payload = {
+                targetSheet: "Absen",
+                namaPromotor: nama,
+                toko: toko,
+                detail1: `Lat: ${currentLat}, Lon: ${currentLon}`,
+                detail2: "Hadir",
+                detail3: "Foto Full-Body Terlampir"
+            };
+
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                alert("Absensi berhasil dikirim dan direkam ke Google Sheets!");
+            })
+            .catch(err => {
+                alert("Gagal mengirim absensi.");
+            });
         }
 
         function simpanPenjualan() {
-            alert("Laporan penjualan berhasil disimpan!");
+            const produk = document.getElementById('selectProduk').value;
+            const qty = document.getElementById('qtyJual').value;
+            
+            if (!produk) {
+                alert("Pilih produk terlebih dahulu!");
+                return;
+            }
+
+            const payload = {
+                targetSheet: "Penjualan",
+                namaPromotor: document.getElementById('namaPromotor').value || "Promotor",
+                toko: document.getElementById('selectToko').value || "Toko",
+                detail1: produk,
+                detail2: `Qty: ${qty}`,
+                detail3: document.getElementById('hargaSatuan').value
+            };
+
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                alert("Laporan penjualan berhasil disimpan ke Google Sheets!");
+            });
         }
 
         function simpanStok() {
